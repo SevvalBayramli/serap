@@ -1,16 +1,127 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-    <meta charset="UTF-8">
-    <title>Excel Genel Toplam</title>
-</head>
-<body>
-    <h2>Excel Dosyası Yükle</h2>
+<meta charset="UTF-8">
+<title>Excel Genel Toplam</title>
 
-    <form method="POST" enctype="multipart/form-data">
-        <input type="file" name="file" accept=".xlsx" required>
-        <br><br>
-        <button type="submit">Yükle ve GENEL_TOPLAM Oluştur</button>
-    </form>
+<style>
+body {
+    font-family: Arial, sans-serif;
+    background: #f4f6f8;
+}
+
+.container {
+    width: 90%;
+    margin: 40px auto;
+}
+
+.card {
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+}
+
+h2 {
+    margin-bottom: 20px;
+}
+
+input[type=file] {
+    padding: 10px;
+}
+
+button {
+    background: #4f46e5;
+    color: white;
+    border: none;
+    padding: 12px 18px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #4338ca;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 30px;
+}
+
+th, td {
+    padding: 12px;
+    text-align: left;
+}
+
+th {
+    background: #111827;
+    color: white;
+}
+
+tr {
+    transition: 0.2s;
+}
+
+tr:hover {
+    filter: brightness(95%);
+}
+
+/* 🎨 Sayfa bazlı renkler */
+.page-0 { background: #eef2ff; }
+.page-1 { background: #ecfeff; }
+.page-2 { background: #fef3c7; }
+.page-3 { background: #fce7f3; }
+.page-4 { background: #dcfce7; }
+</style>
+</head>
+
+<body>
+
+<div class="container">
+    <div class="card">
+        <h2>📊 Excel Yükle & Genel Toplam Oluştur</h2>
+
+        <form method="POST" enctype="multipart/form-data">
+            <input type="file" name="file" accept=".xlsx" required>
+            <button type="submit">Yükle</button>
+        </form>
+    </div>
+
+    {% if tables %}
+    <div class="card" style="margin-top:30px">
+        <h2>🔍 Önizleme</h2>
+
+        <table>
+            <tr>
+                <th>Sayfa</th>
+                <th>Ürün Adı</th>
+                <th>Kodu</th>
+                <th>Toplam</th>
+            </tr>
+
+            {% set pages = {} %}
+            {% for row in tables %}
+                {% if row.SAYFA not in pages %}
+                    {% set _ = pages.update({row.SAYFA: pages|length}) %}
+                {% endif %}
+
+                <tr class="page-{{ pages[row.SAYFA] % 5 }}">
+                    <td>{{ row.SAYFA }}</td>
+                    <td>{{ row["ÜRÜN ADI"] }}</td>
+                    <td>{{ row.KODU }}</td>
+                    <td>{{ "%.2f"|format(row.TOPLAM) }}</td>
+                </tr>
+            {% endfor %}
+        </table>
+        {% if tables %}
+        <form action="/download" method="get" style="margin-top:20px">
+            <button type="submit">⬇ Excel’i İndir</button>
+        </form>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
 </body>
 </html>
