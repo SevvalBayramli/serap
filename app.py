@@ -77,7 +77,7 @@ def index():
                 fallback_mode = False
 
                 
-            for col in range(1, len(df.columns)):
+            for col in range(len(df.columns)):
                 urun_adi = df.iloc[urun_adi_row, col]
                 kodu = df.iloc[urun_kod_row, col]
 
