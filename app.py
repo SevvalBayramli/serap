@@ -27,6 +27,14 @@ def index():
     if request.method == "POST":
         file = request.files["file"]
 
+        if "file" not in request.files:
+            return "Dosya gelmedi"
+
+        file = request.files["file"]
+
+        if file.filename == "":
+            return "Dosya seçilmedi"
+
         if not file or not file.filename.endswith(".xlsx"):
             return "Lütfen Excel (.xlsx) dosyası yükleyin"
 
@@ -37,7 +45,10 @@ def index():
         dosya = filepath
         genel_sayfa_adi = "GENEL_TOPLAM"
 
-        excel = pd.ExcelFile(dosya)
+        try:
+            excel = pd.ExcelFile(dosya)
+        except Exception as e:
+            return f"Excel okunamadı: {str(e)}"
         tum_urunler = []
 
         for sheet in excel.sheet_names:
@@ -57,22 +68,43 @@ def index():
                 elif hucre == "TOPLAM":
                     toplam_row = i
 
+            # === SATIR TESPİTİ ===
             if None in (urun_adi_row, urun_kod_row, toplam_row):
-                continue
+                fallback_mode = True
+                urun_adi_row = 1   # 2. satır
+                urun_kod_row = 2   # 3. satır
+            else:
+                fallback_mode = False
 
+                
             for col in range(1, len(df.columns)):
                 urun_adi = df.iloc[urun_adi_row, col]
                 kodu = df.iloc[urun_kod_row, col]
-                toplam = df.iloc[toplam_row, col]
 
-                if pd.isna(urun_adi) or pd.isna(kodu) or pd.isna(toplam):
+                if pd.isna(urun_adi) or pd.isna(kodu):
                     continue
+
+                # === NORMAL MOD (TOPLAM SATIRI VAR) ===
+                if not fallback_mode:
+                    toplam = df.iloc[toplam_row, col]
+                    toplam_numeric = pd.to_numeric(toplam, errors="coerce")
+                    if pd.isna(toplam_numeric):
+                        continue
+
+                # === FALLBACK MOD (ALTTAKİ SAYILARI TOPLA) ===
+                else:
+                    sayilar = df.iloc[urun_kod_row + 1 :, col]
+                    sayilar_numeric = pd.to_numeric(sayilar, errors="coerce")
+                    toplam_numeric = sayilar_numeric.sum()
+
+                    if toplam_numeric == 0:
+                        continue
 
                 tum_urunler.append({
                     "SAYFA": sheet,
                     "ÜRÜN ADI": str(urun_adi).strip(),
                     "KODU": str(kodu).strip(),
-                    "TOPLAM": float(toplam)
+                    "TOPLAM": float(toplam_numeric)
                 })
 
         genel_df = pd.DataFrame(tum_urunler)
